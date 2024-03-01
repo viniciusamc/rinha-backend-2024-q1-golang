@@ -1,8 +1,8 @@
 package main
 
 import (
-	// "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
@@ -63,7 +63,12 @@ func transacoes(w http.ResponseWriter, r *http.Request) {
         "limite": novoLimite,
     }
 
-    json.NewEncoder(w).Encode(response)
+    err = json.NewEncoder(w).Encode(response)
+
+    if err != nil {
+        fmt.Print("error in enconde")
+        return
+    }
 }
 
 func extrato(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +76,7 @@ func extrato(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         w.WriteHeader(http.StatusUnprocessableEntity)
+        return
     }
 
     if vars > 5 || vars < 1 {
@@ -80,5 +86,10 @@ func extrato(w http.ResponseWriter, r *http.Request) {
 
     extrato := Extrato(vars)
 
-    json.NewEncoder(w).Encode(extrato)
+    err = json.NewEncoder(w).Encode(extrato)
+
+    if err != nil {
+        fmt.Print("error in enconde")
+        return
+    }
 }

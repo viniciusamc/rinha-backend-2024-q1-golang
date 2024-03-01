@@ -1,6 +1,6 @@
 CREATE TYPE "tipo_transacao" AS ENUM ('c', 'd');
 
-CREATE TABLE
+CREATE UNLOGGED TABLE
     "clientes" (
         "id" SERIAL NOT NULL,
         "saldo" INTEGER NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE
         CONSTRAINT "clientes_pkey" PRIMARY KEY ("id")
     );
 
-CREATE TABLE
+CREATE UNLOGGED TABLE
     "transacoes" (
         "id" SERIAL NOT NULL,
         "valor" INTEGER NOT NULL,

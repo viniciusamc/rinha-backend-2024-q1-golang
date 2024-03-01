@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	// "github.com/jackc/pgx/v5"
 	"time"
-	// "net/http"
 )
 
 type Cliente struct {
@@ -40,6 +38,8 @@ func Transacao(id int, valor int, tipo string, descricao string) (saldoCliente i
 
 	defer dbL.Rollback(context.Background())
 
+	// dbL.Exec(context.Background(), "SELECT pg_advisory_xact_lock($1)", string(id))
+
 	var cliente Cliente
 
 	err = dbL.QueryRow(context.Background(), "SELECT saldo, limite FROM clientes WHERE id = $1", id).Scan(&cliente.Saldo, &cliente.Limite)
@@ -54,13 +54,8 @@ func Transacao(id int, valor int, tipo string, descricao string) (saldoCliente i
 		cliente.Saldo = cliente.Saldo + valor
 	}
 
-	if (cliente.Limite + cliente.Saldo) < 0 {
+	if tipo == "d" && (cliente.Limite+cliente.Saldo) < 0 {
 		return 0, 0, errors.New("422")
-	}
-
-	err = dbL.QueryRow(context.Background(), "UPDATE clientes SET saldo = $1 WHERE id = $2 RETURNING saldo", cliente.Saldo, id).Scan(&cliente.Saldo)
-	if err != nil {
-		fmt.Print(err, "db error")
 	}
 
 	_, err = dbL.Exec(context.Background(), "INSERT INTO transacoes(id_cliente,valor,tipo,descricao, realizada_em) VALUES($1,$2,$3,$4,$5)", id, valor, tipo, descricao, time.Now())
@@ -68,11 +63,17 @@ func Transacao(id int, valor int, tipo string, descricao string) (saldoCliente i
 		fmt.Print(err, "db error")
 	}
 
-	dbL.Commit(context.Background())
+	_, err = dbL.Exec(context.Background(), "UPDATE clientes SET saldo = $1 WHERE id = $2", cliente.Saldo, id)
+	if err != nil {
+		fmt.Print(err, "db error")
+	}
 
 	if err != nil {
+		fmt.Print(nil)
 		return 0, 0, errors.New("422")
 	}
+
+	dbL.Commit(context.Background())
 
 	return cliente.Saldo, cliente.Limite, nil
 }
@@ -86,6 +87,9 @@ func Extrato(id int) Extract {
 	defer dbL.Rollback(context.Background())
 
 	results, err := dbL.Query(context.Background(), "SELECT valor, tipo, descricao, realizada_em FROM transacoes WHERE id_cliente = $1 ORDER BY id DESC LIMIT 10", id)
+	if err != nil {
+		fmt.Print(nil)
+	}
 
 	var transacoes []TransacaoList
 
